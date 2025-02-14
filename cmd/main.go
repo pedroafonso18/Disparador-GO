@@ -8,4 +8,5 @@ import (
 func main() {
 	config.Load()
 	database.FetchConnections()
+	database.FetchCampanhas()
 }
