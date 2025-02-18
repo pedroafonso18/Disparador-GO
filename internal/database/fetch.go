@@ -48,14 +48,14 @@ func FetchConnections() ([]Instance, error) {
 	return instances, nil
 }
 
-func FetchCampanhas() ([]Campaign, error) {
+func FetchCampanhas(campanha string) ([]Campaign, error) {
 	conn, err := GetConnection()
 	if err != nil {
 		return nil, fmt.Errorf("error getting campaigns: %v", err)
 	}
 	defer conn.Close(context.Background())
 
-	rows, err := conn.Query(context.Background(), "SELECT numero, campanha FROM campanhas WHERE disparado = FALSE")
+	rows, err := conn.Query(context.Background(), "SELECT numero, campanha FROM campanhas WHERE disparado = FALSE AND campanha=$1", campanha)
 	if err != nil {
 		return nil, fmt.Errorf("error getting query from db: %v", err)
 	}
@@ -89,6 +89,22 @@ func FetchTemplateText() (string, error) {
 	var text string
 	if err := row.Scan(&text); err != nil {
 		return "", fmt.Errorf("error scanning template: %v", err)
+	}
+
+	return text, nil
+}
+
+func FetchActiveCampanha() (string, error) {
+	conn, err := GetConnection()
+	if err != nil {
+		return "", fmt.Errorf("error getting campaign: %v", err)
+	}
+	defer conn.Close(context.Background())
+
+	row := conn.QueryRow(context.Background(), "SELECT campanha FROM campanhasconfig WHERE ativa = true")
+	var text string
+	if err := row.Scan(&text); err != nil {
+		return "", fmt.Errorf("error scanning campaign")
 	}
 
 	return text, nil
