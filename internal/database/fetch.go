@@ -77,3 +77,19 @@ func FetchCampanhas() ([]Campaign, error) {
 
 	return campaigns, nil
 }
+
+func FetchTemplateText() (string, error) {
+	conn, err := GetConnection()
+	if err != nil {
+		return "", fmt.Errorf("error getting template: %v", err)
+	}
+	defer conn.Close(context.Background())
+
+	row := conn.QueryRow(context.Background(), "SELECT texto FROM templates WHERE ativo = true LIMIT 1")
+	var text string
+	if err := row.Scan(&text); err != nil {
+		return "", fmt.Errorf("error scanning template: %v", err)
+	}
+
+	return text, nil
+}
