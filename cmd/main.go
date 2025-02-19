@@ -13,7 +13,7 @@ func main() {
 		if services.ReturnTime() {
 			services.Disparos()
 		} else {
-			fmt.Println("Espere um instante e tente novamente.")
+			fmt.Println("Fora do horário de funcionamento, espere e tente novamente.")
 		}
 	}
 }
