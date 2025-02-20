@@ -40,6 +40,13 @@ func InsertLog(num string, conexao string, template string, nome_campanha string
 		return
 	}
 
+	query2 := "UPDATE instances SET sent = sent + 1 WHERE name = $1"
+	_, err = conn.Exec(context.Background(), query2, conexao)
+	if err != nil {
+		fmt.Println("Error executing update on instances:", err)
+		return
+	}
+
 	rowsAffected := result.RowsAffected()
 
 	fmt.Printf("Insert successful, %d rows affected.\n", rowsAffected)
