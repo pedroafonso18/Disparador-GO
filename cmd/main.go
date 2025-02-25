@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	for 1 > 0 {
+	for {
 		config.Load()
 		if services.ReturnTime() {
 			services.Disparos()
