@@ -2,9 +2,10 @@ package services
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
-	"math/rand/v2"
+	"math/rand"
 
 	"github.com/pedroafonso18/Disparador-GO/internal/api"
 	"github.com/pedroafonso18/Disparador-GO/internal/database"
@@ -12,7 +13,6 @@ import (
 
 func Disparos() {
 	fmt.Println("Starting Disparos operation")
-	rand := rand.IntN(8-3) + 3
 
 	fmt.Println("Fetching template texts")
 	templates, err := database.FetchTemplateText()
@@ -46,38 +46,47 @@ func Disparos() {
 	}
 	fmt.Println("Successfully fetched campaigns")
 
+	var wg sync.WaitGroup
+
 	for _, connection := range connections {
-		fmt.Printf("Processing connection: %s\n", connection.Name)
-		messagesSent := uint(0)
+		wg.Add(1)
+		go func(conn database.Instance) {
+			defer wg.Done()
+			messagesSent := uint(0)
 
-		for _, campaign := range campaigns {
-			if messagesSent >= connection.Limit {
-				fmt.Printf("Reached message limit for connection: %s\n", connection.Name)
-				break
-			}
+			for _, campaign := range campaigns {
+				if messagesSent >= conn.Limit {
+					fmt.Printf("Reached message limit for connection: %s\n", conn.Name)
+					return
+				}
 
-			fmt.Printf("Sending message for campaign: %s to number: %s\n", campaign.Campaign, campaign.Number)
-			if connection.IsEvo {
-				err = api.SendMessageEvo(campaign.Number, connection.Name, templates)
+				delay := rand.Intn(5) + 3
+
+				fmt.Printf("Sending message for campaign: %s to number: %s using %s\n",
+					campaign.Campaign, campaign.Number, conn.Name)
+
+				var err error
+				if conn.IsEvo {
+					err = api.SendMessageEvo(campaign.Number, conn.Name, templates)
+				} else {
+					err = api.SendMessageWuz(campaign.Number, templates, conn.InstanceID)
+				}
+
+				if err != nil {
+					fmt.Printf("Error sending message through %s: %s\n", conn.Name, err)
+					continue
+				}
+
 				database.UpdateDisparados(campaign.Number)
-				database.InsertLog(campaign.Number, connection.Name, templates, campaign.Campaign)
-				time.Sleep(time.Duration(rand) * time.Second)
-			} else {
-				err = api.SendMessageWuz(campaign.Number, templates, connection.InstanceID)
-				database.UpdateDisparados(campaign.Number)
-				database.InsertLog(campaign.Number, connection.Name, templates, campaign.Campaign)
-				time.Sleep(time.Duration(rand) * time.Second)
-			}
+				database.InsertLog(campaign.Number, conn.Name, templates, campaign.Campaign)
+				messagesSent++
 
-			if err != nil {
-				fmt.Printf("Error sending message: %s\n", err)
-				continue
+				fmt.Printf("Connection %s waiting %d seconds before next message\n", conn.Name, delay)
+				time.Sleep(time.Duration(delay) * time.Second)
 			}
-
-			fmt.Printf("Successfully sent message for campaign: %s to number: %s\n", campaign.Campaign, campaign.Number)
-			messagesSent++
-		}
+		}(connection)
 	}
 
+	wg.Wait()
 	fmt.Println("Disparos operation completed")
 }

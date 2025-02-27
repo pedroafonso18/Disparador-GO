@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"time"
+
+	"math/rand"
 
 	"github.com/pedroafonso18/Disparador-GO/internal/config"
 	"github.com/pedroafonso18/Disparador-GO/internal/services"
@@ -9,6 +12,7 @@ import (
 
 func main() {
 	for {
+		rand.Seed(time.Now().UnixNano())
 		config.Load()
 		if services.ReturnTime() {
 			services.Disparos()
